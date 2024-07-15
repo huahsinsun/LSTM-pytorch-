@@ -19,51 +19,69 @@ class TimeSeriesDataset(Dataset):
         x = self.data[index:index + self.seq_length]
         y = self.data[index + self.seq_length]
         return x, y
-
-# 定义Transformer模型
-class TransformerModel(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, output_size, seq_length):
-        super(TransformerModel, self).__init__()
-        self.seq_length = seq_length
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-
-        self.positional_encoding = nn.Parameter(torch.zeros(1, seq_length, hidden_size))
-        self.encoder_layer = nn.TransformerEncoderLayer(d_model=hidden_size, nhead=8)
-        self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=num_layers)
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, output_size)
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-torch.log(torch.tensor(10000.0)) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0).transpose(0, 1)
+        self.register_buffer('pe', pe)
 
     def forward(self, x):
-        x = self.fc1(x)
-        x += self.positional_encoding[:, :self.seq_length, :]
-        x = self.transformer_encoder(x)
-        x = self.fc2(x[:, -1, :])
-        return x
+        return x + self.pe[:x.size(0), :]
+# 定义Transformer模型
+class TransformerModel(nn.Module):
+    def __init__(self, input_size, num_layers, d_model, nhead, dim_feedforward, output_size):
+        super(TransformerModel, self).__init__()
+        self.model_type = 'Transformer'
+        self.src_mask = None
+        self.pos_encoder = PositionalEncoding(d_model)
+        self.encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward)
+        self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=num_layers)
+        self.decoder = nn.Linear(d_model, output_size)
+        self.d_model = d_model
+
+    def forward(self, src):
+        src = src * torch.sqrt(torch.tensor(self.d_model, dtype=torch.float32))
+        src = self.pos_encoder(src)
+        output = self.transformer_encoder(src)
+        output = self.decoder(output[:, -1, :])
+        return output
 
 # 读取测试集的数据
-test_df = pd.read_csv('../dataset/test_dataset.csv')
+test_df = pd.read_csv(r'C:\Users\huahs\PycharmProjects\LSTM-pytorch\dataset\test_dataset.csv')
 
 # 将数据集转换为PyTorch的Tensor
 test_data = torch.tensor(test_df['Elia Grid Load [MW]'].values, dtype=torch.float32).unsqueeze(1)
 
 # 创建测试集的数据集对象
-seq_length = 24
+seq_length = 48
 test_dataset = TimeSeriesDataset(test_data, seq_length)
 
 # 创建数据加载器
 batch_size = 32
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
+
 # 定义模型参数
+# input_size = 1
+# num_layers = 2
+# d_model = 64
+# nhead = 8
+# dim_feedforward = 256
+# output_size = 1
 input_size = 1
-hidden_size = 64
-num_layers = 2
+num_layers = 3
+d_model = 128
+nhead = 8
+dim_feedforward = 512
 output_size = 1
 
 # 创建模型实例
-model = TransformerModel(input_size, hidden_size, num_layers, output_size, seq_length)
+model = TransformerModel(input_size, num_layers, d_model, nhead, dim_feedforward, output_size)
 
 # 设置设备
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

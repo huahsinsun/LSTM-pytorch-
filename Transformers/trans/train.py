@@ -2,18 +2,18 @@ import torch
 import torch.nn as nn
 import pandas as pd
 from torch.utils.data import DataLoader
-from transformer.dataset_model import TimeSeriesDataset, TransformerModel
+from transformer import TimeSeriesDataset, TransformerModel
 
 # 读取训练集和验证集的数据
-train_df = pd.read_csv('../dataset/train_dataset.csv')
-val_df = pd.read_csv('../dataset/val_dataset.csv')
+train_df = pd.read_csv(r'C:\Users\huahs\PycharmProjects\LSTM-pytorch\dataset\train_dataset.csv')
+val_df = pd.read_csv(r'C:\Users\huahs\PycharmProjects\LSTM-pytorch\dataset\val_dataset.csv')
 
 # 将数据集转换为PyTorch的Tensor
 train_data = torch.tensor(train_df['Elia Grid Load [MW]'].values, dtype=torch.float32).unsqueeze(1)
 val_data = torch.tensor(val_df['Elia Grid Load [MW]'].values, dtype=torch.float32).unsqueeze(1)
 
 # 创建训练集和验证集的数据集对象
-seq_length = 24
+seq_length = 48
 train_dataset = TimeSeriesDataset(train_data, seq_length)
 val_dataset = TimeSeriesDataset(val_data, seq_length)
 
@@ -22,12 +22,19 @@ batch_size = 32
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-# 定义模型参数
+# # 定义模型参数
+# input_size = 1
+# num_layers = 2
+# d_model = 64
+# nhead = 8
+# dim_feedforward = 256
+# output_size = 1
+
 input_size = 1
-num_layers = 2
-d_model = 64
+num_layers = 3
+d_model = 128
 nhead = 8
-dim_feedforward = 256
+dim_feedforward = 512
 output_size = 1
 
 # 创建模型实例
