@@ -13,7 +13,7 @@ train_data = torch.tensor(train_df['Elia Grid Load [MW]'].values, dtype=torch.fl
 val_data = torch.tensor(val_df['Elia Grid Load [MW]'].values, dtype=torch.float32).unsqueeze(1)
 
 # 创建训练集和验证集的数据集对象
-seq_length = 48
+seq_length = 24
 train_dataset = TimeSeriesDataset(train_data, seq_length)
 val_dataset = TimeSeriesDataset(val_data, seq_length)
 
@@ -22,20 +22,15 @@ batch_size = 32
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-# # 定义模型参数
-# input_size = 1
-# num_layers = 2
-# d_model = 64
-# nhead = 8
-# dim_feedforward = 256
-# output_size = 1
-
+# 定义模型参数
 input_size = 1
-num_layers = 3
-d_model = 128
+num_layers = 2
+d_model = 64
 nhead = 8
-dim_feedforward = 512
+dim_feedforward = 256
 output_size = 1
+
+
 
 # 创建模型实例
 model = TransformerModel(input_size, num_layers, d_model, nhead, dim_feedforward, output_size)
@@ -47,7 +42,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
 
 # 定义训练参数
-num_epochs = 10
+num_epochs = 30
 learning_rate = 0.001
 
 # 定义损失函数和优化器

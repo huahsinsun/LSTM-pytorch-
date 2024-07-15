@@ -58,7 +58,7 @@ test_df = pd.read_csv(r'C:\Users\huahs\PycharmProjects\LSTM-pytorch\dataset\test
 test_data = torch.tensor(test_df['Elia Grid Load [MW]'].values, dtype=torch.float32).unsqueeze(1)
 
 # 创建测试集的数据集对象
-seq_length = 48
+seq_length = 24
 test_dataset = TimeSeriesDataset(test_data, seq_length)
 
 # 创建数据加载器
@@ -66,19 +66,14 @@ batch_size = 32
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 
-# 定义模型参数
-# input_size = 1
-# num_layers = 2
-# d_model = 64
-# nhead = 8
-# dim_feedforward = 256
-# output_size = 1
+
 input_size = 1
-num_layers = 3
-d_model = 128
+num_layers = 2
+d_model = 64
 nhead = 8
-dim_feedforward = 512
+dim_feedforward = 256
 output_size = 1
+
 
 # 创建模型实例
 model = TransformerModel(input_size, num_layers, d_model, nhead, dim_feedforward, output_size)
@@ -107,6 +102,9 @@ with torch.no_grad():
 # 将预测结果和真实值转换为一维数组
 predictions = np.concatenate(predictions).flatten()
 true_values = np.concatenate(true_values).flatten()
+
+print(predictions.shape)
+print(true_values.shape)
 
 # 计算均方误差（MSE）和均方根误差（RMSE）
 mse = np.mean((predictions - true_values) ** 2)
