@@ -41,7 +41,7 @@ class LSTMModel(nn.Module):
 
 
 # 读取测试集的数据
-test_df = pd.read_csv('dataset/test_dataset.csv')
+test_df = pd.read_csv('../dataset/test_dataset.csv')
 
 # 将数据集转换为PyTorch的Tensor
 test_data = torch.tensor(test_df['Elia Grid Load [MW]'].values, dtype=torch.float32).unsqueeze(1)
@@ -67,7 +67,7 @@ model = LSTMModel(input_size, hidden_size, num_layers, output_size)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # 加载已训练好的模型参数
-model.load_state_dict(torch.load('best_model.pt'))
+model.load_state_dict(torch.load('../best_model.pt'))
 model.to(device)
 model.eval()
 

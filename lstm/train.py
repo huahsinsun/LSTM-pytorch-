@@ -1,13 +1,12 @@
 import torch
 import torch.nn as nn
 import pandas as pd
-import numpy as np
 from torch.utils.data import DataLoader
-from dataset_model import TimeSeriesDataset, LSTMModel
+from lstm.dataset_model import TimeSeriesDataset, LSTMModel
 
 # 读取训练集和验证集的数据
-train_df = pd.read_csv('dataset/train_dataset.csv')
-val_df = pd.read_csv('dataset/val_dataset.csv')
+train_df = pd.read_csv('../dataset/train_dataset.csv')
+val_df = pd.read_csv('../dataset/val_dataset.csv')
 
 # 将数据集转换为PyTorch的Tensor
 train_data = torch.tensor(train_df['Elia Grid Load [MW]'].values, dtype=torch.float32).unsqueeze(1)
@@ -90,6 +89,6 @@ for epoch in range(num_epochs):
     # 保存最好的模型
     if val_loss < best_val_loss:
         best_val_loss = val_loss
-        torch.save(model.state_dict(), 'best_model.pt')
+        torch.save(model.state_dict(), '../best_model.pt')
 
 print("训练结束了.")
