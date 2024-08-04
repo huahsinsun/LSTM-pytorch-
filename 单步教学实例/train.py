@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import pandas as pd
 from torch.utils.data import DataLoader
-from lstm.dataset_model import TimeSeriesDataset, LSTMModel
+from 单步教学实例.dataset_model import TimeSeriesDataset, LSTMModel
 
 # 读取训练集和验证集的数据
 train_df = pd.read_csv('../dataset/train_dataset.csv')
