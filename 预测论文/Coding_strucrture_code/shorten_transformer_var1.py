@@ -174,46 +174,46 @@ def train_and_evaluate(seq_length):
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    # 模型训练
-    best_val_loss = float('inf')
-    for epoch in range(num_epochs):
-        model.train()
-        for step, (inputs, targets) in enumerate(train_dataloader, 1):
-            inputs, targets = inputs.to(device), targets.to(device)
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
-            loss.backward()
-            optimizer.step()
-
-            # 每个epoch打印20次预测信息
-            if step % (len(train_dataloader) // 5 + 1) == 0:
-                print(f"Epoch {epoch + 1}/{num_epochs}, 预测步骤 {step}/{len(train_dataloader)}, "
-                     f"预测值: {outputs[-1].item():.4f}, 实际值: {targets[-1].item():.4f}, abs: {abs(outputs[-1].item() - targets[-1].item()):.4f}")
-
-        # 验证过程（保持不变）
-        model.eval()
-        val_loss = 0.0
-        val_predictions, val_true_values = [], []
-        with torch.no_grad():
-            for inputs, targets in val_dataloader:
-                inputs, targets = inputs.to(device), targets.to(device)
-                outputs = model(inputs)
-                val_loss += criterion(outputs, targets).item()
-                val_predictions.extend(outputs.detach().cpu().numpy())
-                val_true_values.extend(targets.detach().cpu().numpy())
-
-        val_loss /= len(val_dataloader)
-        val_predictions = np.array(val_predictions)
-        val_true_values = np.array(val_true_values)
-        # 计算额外的性能指标
-        val_mse = np.mean((val_predictions - val_true_values) ** 2)
-        val_rmse = np.sqrt(val_mse)
-        print(f"Validation Loss: {val_loss:.4f},Loss: {loss.item():.4f} \n MSE: {val_mse:.4f}, RMSE: {val_rmse:.4f}")
-
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            torch.save(model.state_dict(), f'../save_model_para/best_model_seq{seq_length}.pt')
+    # # 模型训练
+    # best_val_loss = float('inf')
+    # for epoch in range(num_epochs):
+    #     model.train()
+    #     for step, (inputs, targets) in enumerate(train_dataloader, 1):
+    #         inputs, targets = inputs.to(device), targets.to(device)
+    #         optimizer.zero_grad()
+    #         outputs = model(inputs)
+    #         loss = criterion(outputs, targets)
+    #         loss.backward()
+    #         optimizer.step()
+    #
+    #         # 每个epoch打印20次预测信息
+    #         if step % (len(train_dataloader) // 5 + 1) == 0:
+    #             print(f"Epoch {epoch + 1}/{num_epochs}, 预测步骤 {step}/{len(train_dataloader)}, "
+    #                  f"预测值: {outputs[-1].item():.4f}, 实际值: {targets[-1].item():.4f}, abs: {abs(outputs[-1].item() - targets[-1].item()):.4f}")
+    #
+    #     # 验证过程（保持不变）
+    #     model.eval()
+    #     val_loss = 0.0
+    #     val_predictions, val_true_values = [], []
+    #     with torch.no_grad():
+    #         for inputs, targets in val_dataloader:
+    #             inputs, targets = inputs.to(device), targets.to(device)
+    #             outputs = model(inputs)
+    #             val_loss += criterion(outputs, targets).item()
+    #             val_predictions.extend(outputs.detach().cpu().numpy())
+    #             val_true_values.extend(targets.detach().cpu().numpy())
+    #
+    #     val_loss /= len(val_dataloader)
+    #     val_predictions = np.array(val_predictions)
+    #     val_true_values = np.array(val_true_values)
+    #     # 计算额外的性能指标
+    #     val_mse = np.mean((val_predictions - val_true_values) ** 2)
+    #     val_rmse = np.sqrt(val_mse)
+    #     print(f"Validation Loss: {val_loss:.4f},Loss: {loss.item():.4f} \n MSE: {val_mse:.4f}, RMSE: {val_rmse:.4f}")
+    #
+    #     if val_loss < best_val_loss:
+    #         best_val_loss = val_loss
+    #         torch.save(model.state_dict(), f'../save_model_para/best_model_seq{seq_length}.pt')
     #
     # 测试过程（保持不变）
     model.load_state_dict(torch.load(f'../save_model_para/best_model_seq{seq_length}.pt'))
@@ -248,7 +248,7 @@ def train_and_evaluate(seq_length):
     return predictions, true_values, mse, rmse, dtw
 
 
-seq_lengths = [16,24,32,40]
+seq_lengths = [24]
 results = [train_and_evaluate(sl) for sl in seq_lengths]
 import matplotlib
 # 设置matplotlib的字体为SimHei
@@ -257,11 +257,11 @@ matplotlib.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 
 
 # 结果可视化
-plt.figure(figsize=(22,8))
+plt.figure(figsize=(12,8))
 for i, (predictions, true_values, mse, rmse,dtw) in enumerate(results):
     plt.subplot(2,2,i + 1)
-    plt.plot(true_values[:], label='真实值')
-    plt.plot(predictions[:], label='预测值')
+    plt.plot(true_values[1500:1500+96*2], label='真实值')
+    plt.plot(predictions[1500:1500+96*2], label='预测值')
     # 设置刻度和标签
     # plt.xticks(ticks=np.arange(0, 96, 16), labels=[f'{j // 4:02d}:00' for j in range(0, 96, 16)])
     plt.title(f'序列长度 {seq_lengths[i]} ')
@@ -275,3 +275,40 @@ for i, (predictions, true_values, mse, rmse,dtw) in enumerate(results):
 # 性能指标输出
 for i, (predictions, true_values, mse, rmse, dtw) in enumerate(results):
     print(f'序列长度 {seq_lengths[i]} - MSE: {mse:.4f}, RMSE: {rmse:.4f}, DTW: {dtw:.4f}')
+
+
+def find_best_fit_window(true_values, predictions, window_size=150):
+    errors = (true_values - predictions) ** 2
+    rolling_mse = np.convolve(errors, np.ones(window_size), 'valid') / window_size
+    best_start = np.argmin(rolling_mse)
+    return best_start, best_start + window_size
+
+
+# 新增的最佳拟合区间可视化
+for i, (predictions, true_values, mse, rmse, dtw) in enumerate(results):
+    best_start, best_end = find_best_fit_window(true_values, predictions)
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(true_values[best_start:best_end], label='真实值')
+    plt.plot(predictions[best_start:best_end], label='预测值')
+
+    plt.title(f'序列长度 {seq_lengths[i]} - 最佳拟合区间')
+    plt.xlabel('时间点')
+    plt.ylabel('负荷 [MW]')
+    plt.legend()
+    plt.tight_layout()
+
+    # 添加性能指标注释
+    window_mse = np.mean((true_values[best_start:best_end] - predictions[best_start:best_end]) ** 2)
+    window_rmse = np.sqrt(window_mse)
+    window_dtw = calculate_dtw(true_values[best_start:best_end], predictions[best_start:best_end])
+
+    plt.annotate(f'MSE: {window_mse:.2f}\nRMSE: {window_rmse:.2f}\nDTW: {window_dtw:.2f}',
+                 xy=(0.05, 0.95), xycoords='axes fraction',
+                 verticalalignment='top', horizontalalignment='left',
+                 bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+
+    plt.savefig(f'../save_pic/best_fit_{seq_lengths[i]}.jpg', dpi=350)
+    plt.close()
+
+print("所有图像已保存。")
